@@ -1,0 +1,90 @@
+services:
+  scheduler:
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 800M
+        reservations:
+          cpus: "0.5"
+          memory: 400M
+    environment:
+      AIRFLOW__CORE__PARALLELISM: "8"
+      AIRFLOW__CORE__DAG_CONCURRENCY: "4"
+      AIRFLOW__SCHEDULER__MAX_ACTIVE_RUNS_PER_DAG: "1"
+
+  webserver:
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 600M
+        reservations:
+          cpus: "0.25"
+          memory: 300M
+
+  triggerer:
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 300M
+        reservations:
+          cpus: "0.25"
+          memory: 200M
+
+  superset:
+    deploy:
+      resources:
+        limits:
+          cpus: "0.75"
+          memory: 800M
+        reservations:
+          cpus: "0.35"
+          memory: 400M
+
+  clickhouse:
+    deploy:
+      resources:
+        limits:
+          cpus: "0.75"
+          memory: 900M
+        reservations:
+          cpus: "0.35"
+          memory: 400M
+    environment:
+      CLICKHOUSE_CACHE_SIZE: 536870912   # 512MB
+      CLICKHOUSE_MAX_CONNECTIONS: 50
+
+  spark-master:
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+
+  spark-worker:
+    environment:
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=1
+    deploy:
+      resources:
+        limits:
+          cpus: "0.75"
+          memory: 1.2G
+        reservations:
+          cpus: "0.5"
+          memory: 768M
+
+  mongo:
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M

@@ -1,0 +1,185 @@
+services:
+  airflow-init:
+    build:
+      context: .
+      dockerfile: docker/airflow/Dockerfile
+    image: airflow-local:2.9.3
+    env_file:
+      - .env
+      - config/project.env
+    depends_on:
+      clickhouse:
+        condition: service_started
+      mongo:
+        condition: service_started
+      spark-master:
+        condition: service_started
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - ./spark-apps:/opt/airflow/spark-apps
+
+  webserver:
+    build:
+      context: .
+      dockerfile: docker/airflow/Dockerfile
+    image: airflow-local:2.9.3
+    env_file:
+      - .env
+      - config/project.env
+    depends_on:
+      clickhouse:
+        condition: service_started
+      mongo:
+        condition: service_started
+      spark-master:
+        condition: service_started
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - ./spark-apps:/opt/airflow/spark-apps
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/airflow/Dockerfile
+    image: airflow-local:2.9.3
+    env_file:
+      - .env
+      - config/project.env
+    depends_on:
+      clickhouse:
+        condition: service_started
+      mongo:
+        condition: service_started
+      spark-master:
+        condition: service_started
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - ./spark-apps:/opt/airflow/spark-apps
+
+  triggerer:
+    build:
+      context: .
+      dockerfile: docker/airflow/Dockerfile
+    image: airflow-local:2.9.3
+    env_file:
+      - .env
+      - config/project.env
+    depends_on:
+      clickhouse:
+        condition: service_started
+      mongo:
+        condition: service_started
+      spark-master:
+        condition: service_started
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - ./spark-apps:/opt/airflow/spark-apps
+
+  superset-init:
+    build:
+      context: .
+      dockerfile: docker/superset/Dockerfile
+    image: superset-local:3.1.0
+    env_file:
+      - .env
+      - config/project.env
+    depends_on:
+      clickhouse:
+        condition: service_started
+
+  superset:
+    build:
+      context: .
+      dockerfile: docker/superset/Dockerfile
+    image: superset-local:3.1.0
+    env_file:
+      - .env
+      - config/project.env
+    depends_on:
+      clickhouse:
+        condition: service_started
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_DB: analytics
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+      - clickhouse-logs:/var/log/clickhouse-server
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    env_file:
+      - config/project.env
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  spark-master:
+    image: ghcr.io/apache/spark/spark:3.5.2
+    restart: unless-stopped
+    environment:
+      SPARK_MODE: master
+      SPARK_RPC_AUTHENTICATION_ENABLED: "no"
+      SPARK_RPC_ENCRYPTION_ENABLED: "no"
+      SPARK_LOCAL_DIRS: /opt/spark/tmp
+      SPARK_LOG_DIR: /opt/spark/logs
+      SPARK_MASTER_HOST: spark-master
+      SPARK_MASTER_PORT: "7077"
+      SPARK_MASTER_WEBUI_PORT: "8080"
+    ports:
+      - "7077:7077"
+      - "8080:8080"
+    volumes:
+      - spark-tmp:/opt/spark/tmp
+      - spark-logs:/opt/spark/logs
+      - ./spark-apps:/opt/spark/applications
+
+  spark-worker:
+    image: ghcr.io/apache/spark/spark:3.5.2
+    restart: unless-stopped
+    depends_on:
+      - spark-master
+    environment:
+      SPARK_MODE: worker
+      SPARK_MASTER_URL: spark://spark-master:7077
+      SPARK_WORKER_MEMORY: 1G
+      SPARK_WORKER_CORES: "1"
+      SPARK_WORKER_PORT: "7078"
+      SPARK_WORKER_WEBUI_PORT: "8081"
+      SPARK_RPC_AUTHENTICATION_ENABLED: "no"
+      SPARK_RPC_ENCRYPTION_ENABLED: "no"
+    volumes:
+      - spark-tmp:/opt/spark/tmp
+      - spark-logs:/opt/spark/logs
+      - ./spark-apps:/opt/spark/applications
+
+volumes:
+  clickhouse-data:
+  clickhouse-logs:
+  mongo-data:
+  spark-tmp:
+  spark-logs:

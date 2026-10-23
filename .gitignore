@@ -1,3 +1,6 @@
 /.env
 /config
 /logs
+# certificates and keys
+*.pem
+*.key
